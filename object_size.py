@@ -54,9 +54,10 @@ cnts = imutils.grab_contours(cnts)
 
 # sort the contours from left-to-right and initialize the
 # 'pixels per metric' calibration variable
+# 輪郭を左から右に並べ替え，キャリブレーション変数「メトリックあたりのピクセル」を初期化します．
 (cnts, _) = contours.sort_contours(cnts)
 pixelsPerMetric = None
-
+#-----------------------------------------------------------------------ここまでは解析済み
 # loop over the contours individually
 for c in cnts:
 	# if the contour is not sufficiently large, ignore it
