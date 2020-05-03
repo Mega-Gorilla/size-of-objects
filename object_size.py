@@ -57,7 +57,6 @@ cnts = imutils.grab_contours(cnts)
 # 輪郭を左から右に並べ替え，キャリブレーション変数「メトリックあたりのピクセル」を初期化します．
 (cnts, _) = contours.sort_contours(cnts)
 pixelsPerMetric = None
-#-----------------------------------------------------------------------ここまでは解析済み
 # loop over the contours individually
 for c in cnts:
 	# if the contour is not sufficiently large, ignore it
@@ -82,6 +81,7 @@ for c in cnts:
 	# loop over the original points and draw them
 	for (x, y) in box:
 		cv2.circle(orig, (int(x), int(y)), 5, (0, 0, 255), -1)
+	#-----------------------------------------------------------------------ここまでは解析済み
 
 	# unpack the ordered bounding box, then compute the midpoint
 	# between the top-left and top-right coordinates, followed by
@@ -94,6 +94,7 @@ for c in cnts:
 	# compute the midpoint between the top-left and top-right points,
 	# followed by the midpoint between the top-righ and bottom-right
 	# compute the midpoint between the top-left and top-right points, followed by the midpoint between the top-righ and bottom-right
+	#左上点と右上点の間の中間点を計算し、その後に右上点と右下点の間の中間点を計算します。 左上点と右上点の間の中間点を計算し、その後に右上点と右下点の間の中間点を計算します。
 	(tlblX, tlblY) = midpoint(tl, bl)
 	(trbrX, trbrY) = midpoint(tr, br)
 

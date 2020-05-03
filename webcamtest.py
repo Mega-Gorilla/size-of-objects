@@ -11,6 +11,10 @@ import cv2
 # 引数でカメラを選べれる。
 cap = cv2.VideoCapture(1)
 
+#計算式- 中点計算用 線上の点
+def midpoint(ptA, ptB):
+	return ((ptA[0] + ptB[0]) * 0.5, (ptA[1] + ptB[1]) * 0.5)
+
 while True:
     # VideoCaptureから1フレーム読み込む
     ret, frame = cap.read()
@@ -46,7 +50,7 @@ while True:
     #輪郭ごとの検出ループ
     for c in cnts:
         #輪郭が小さい場合無視 contourAreaは面積
-        if cv2.contourArea(c) < 100:
+        if cv2.contourArea(c) < 500:
             continue
 
         #回転を考慮した矩形輪郭の取得
@@ -55,6 +59,47 @@ while True:
         box = np.array(box, dtype="int") #座標数値の配列化
         box = perspective.order_points(box) #輪郭内の点の並び替え、左上右上右下左下に
         cv2.drawContours(img, [box.astype("int")], -1, (0, 255, 0), 2) #取得した座標情報の作画(緑)
+        # 点を作画
+        for (x, y) in box:
+            #座標、半径、色、太さ(塗りつぶし-1)
+            cv2.circle(img, (int(x), int(y)), 5, (0, 0, 255), -1)
+        
+        # 左上座標と右上座標の間の中間点を計算し，次に左下座標と右下座標の間の中間点を計算します．
+        # tl -tltr - tr
+        # /          /
+        # tlbl      trbr
+        # /          /
+        # bl -blbr - br
+        (tl, tr, br, bl) = box
+        (tltrX, tltrY) = midpoint(tl, tr)
+        (blbrX, blbrY) = midpoint(bl, br)
+        print("TL=",tl,"TR=",tr,"BR=",br,"BL=",bl,"TLTRX",tltrX,"TLTRY",tltrY)
+        #左上点と右上点の間の中間点を計算し、その後に右上点と右下点の間の中間点を計算します。 左上点と右上点の間の中間点を計算し、その後に右上点と右下点の間の中間点を計算します。
+        (tlblX, tlblY) = midpoint(tl, bl)
+        (trbrX, trbrY) = midpoint(tr, br)
+        # draw the midpoints on the image
+        cv2.circle(img, (int(tltrX), int(tltrY)), 5, (255, 0, 0), -1)
+        cv2.circle(img, (int(blbrX), int(blbrY)), 5, (255, 0, 0), -1)
+        cv2.circle(img, (int(tlblX), int(tlblY)), 5, (255, 0, 0), -1)
+        cv2.circle(img, (int(trbrX), int(trbrY)), 5, (255, 0, 0), -1)
+        # 中間点間のユークリッド距離を計算する
+        dA = dist.euclidean((tltrX, tltrY), (blbrX, blbrY)) #四角高さ
+        dB = dist.euclidean((tlblX, tlblY), (trbrX, trbrY)) #四角幅
+
+        #ピクセル/mm　に値が入っていない時、値を入力
+        if pixelsPerMetric is None:
+            pixelsPerMetric = 17.5
+            print(pixelsPerMetric)
+        # compute the size of the object
+        dimA = dA / pixelsPerMetric #dA 高さ dimA　mm高さ
+        dimB = dB / pixelsPerMetric
+        # draw the object sizes on the image
+        cv2.putText(img, "{:.1f}mm".format(dimA),
+            (int(tltrX - 15), int(tltrY - 10)), cv2.FONT_HERSHEY_SIMPLEX,
+            0.65, (255, 255, 255), 2)
+        cv2.putText(img, "{:.1f}mm".format(dimB),
+            (int(trbrX + 10), int(trbrY)), cv2.FONT_HERSHEY_SIMPLEX,
+            0.65, (255, 255, 255), 2)
     cv2.imshow('test', img) #画面表示(デバック時)
 
     # キー入力を1ms待って、k が27（ESC）だったらBreakする
