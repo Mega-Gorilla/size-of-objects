@@ -6,6 +6,8 @@ import numpy as np
 import argparse
 import imutils
 import cv2
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 
 # VideoCaptureのインスタンスを作成する。
 # 引数でカメラを選べれる。
@@ -14,6 +16,7 @@ cap = cv2.VideoCapture(1)
 #計算式- 中点計算用 線上の点
 def midpoint(ptA, ptB):
 	return ((ptA[0] + ptB[0]) * 0.5, (ptA[1] + ptB[1]) * 0.5)
+
 
 while True:
     # VideoCaptureから1フレーム読み込む
@@ -46,7 +49,10 @@ while True:
     (cnts, _) = contours.sort_contours(cnts)
     #輪郭を上から下または下から上にソート数値の並び替え
     pixelsPerMetric = None
-    
+    overlap_tl=[]
+    overlap_br=[]
+    overlap_size = 10
+
     #輪郭ごとの検出ループ
     for c in cnts:
         #輪郭が小さい場合無視 contourAreaは面積
@@ -55,7 +61,7 @@ while True:
 
         #回転を考慮した矩形輪郭の取得
         box = cv2.minAreaRect(c) #返戻値→(左上の点(x,y)，横と縦のサイズ(width, height)，回転角)
-        box = cv2.cv.BoxPoints(box) if imutils.is_cv2() else cv2.boxPoints(box) #不要なデータを消去
+        box = cv2.cv.BoxPoints(box) if imutils.is_cv2() else cv2.boxPoints(box) #不要なデータを消去 座標データのみにする
         box = np.array(box, dtype="int") #座標数値の配列化
         box = perspective.order_points(box) #輪郭内の点の並び替え、左上右上右下左下に
         cv2.drawContours(img, [box.astype("int")], -1, (0, 255, 0), 2) #取得した座標情報の作画(緑)
@@ -73,7 +79,9 @@ while True:
         (tl, tr, br, bl) = box
         (tltrX, tltrY) = midpoint(tl, tr)
         (blbrX, blbrY) = midpoint(bl, br)
-        print("TL=",tl,"TR=",tr,"BR=",br,"BL=",bl,"TLTRX",tltrX,"TLTRY",tltrY)
+
+        overlap_tl.append([tl[0],tl[1]])
+        overlap_br.append([br[0],br[1]])
         #左上点と右上点の間の中間点を計算し、その後に右上点と右下点の間の中間点を計算します。 左上点と右上点の間の中間点を計算し、その後に右上点と右下点の間の中間点を計算します。
         (tlblX, tlblY) = midpoint(tl, bl)
         (trbrX, trbrY) = midpoint(tr, br)
@@ -82,6 +90,9 @@ while True:
         cv2.circle(img, (int(blbrX), int(blbrY)), 5, (255, 0, 0), -1)
         cv2.circle(img, (int(tlblX), int(tlblY)), 5, (255, 0, 0), -1)
         cv2.circle(img, (int(trbrX), int(trbrY)), 5, (255, 0, 0), -1)
+
+        #内側に作画する場合は寸法を書かない
+
         # 中間点間のユークリッド距離を計算する
         dA = dist.euclidean((tltrX, tltrY), (blbrX, blbrY)) #四角高さ
         dB = dist.euclidean((tlblX, tlblY), (trbrX, trbrY)) #四角幅
@@ -100,7 +111,9 @@ while True:
         cv2.putText(img, "{:.1f}mm".format(dimB),
             (int(trbrX + 10), int(trbrY)), cv2.FONT_HERSHEY_SIMPLEX,
             0.65, (255, 255, 255), 2)
-    cv2.imshow('test', img) #画面表示(デバック時)
+    
+
+    cv2.imshow('Measure', img) #画面表示(デバック時)
 
     # キー入力を1ms待って、k が27（ESC）だったらBreakする
     k = cv2.waitKey(1)
